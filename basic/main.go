@@ -30,6 +30,7 @@ func MyHandler2(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// curl --basic -u myusername1:mypassword1 http://localhost:8080/area1
 	http.HandleFunc("/area1", BasicAuth(MyHandler, "myusername1", "mypassword1", "Please enter your username and password for area 1"))
 	http.HandleFunc("/area2", BasicAuth(MyHandler2, "myusername2", "mypassword2", "Please enter your username and password for area 2"))
 	http.ListenAndServe(":8080", nil)
