@@ -21,6 +21,7 @@ func main() {
 	r := mux.NewRouter()
 
 	r.Handle("/public", public)
+	// curl localhost:8080/private -H "Authorization:Bearer token"
 	r.Handle("/private", auth.JwtMiddleware.Handler(private))
 	r.Handle("/auth", auth.GetTokenHandler)
 
