@@ -13,10 +13,11 @@ func main() {
 }
 
 type LoginForm struct {
-	Name string `json:"name"`
+	ID   string `json:"id"`
 	Pass string `json:"pass"`
 }
 
+// curl -X POST -H "Content-Type: application/json" -d '{"id":"id" ,"pass":"pass"}' localhost:8080/login
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	// cookieの設定
 	var loginForm LoginForm
@@ -24,17 +25,22 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if !authentication(loginForm.Name, loginForm.Pass) {
+	if !authentication(loginForm.ID, loginForm.Pass) {
 		http.Error(w, "auth failed", http.StatusBadRequest)
 		return
 	}
 	expiration := time.Now()
 	expiration = expiration.AddDate(0, 0, 1)
-	setCookie := http.Cookie{Name: "cookie-name-hoge", Value: "cookie-test", Expires: expiration}
+	setCookie := http.Cookie{Name: "sid", Value: "hogehoge", Expires: expiration}
 	http.SetCookie(w, &setCookie)
 
 	redirectPath := "/"
-	cookie, _ := r.Cookie("original_url")
+	cookie, err := r.Cookie("original_url")
+	if err != nil {
+		// cookieがない場合はトップに飛ばす
+		http.Redirect(w, r, redirectPath, http.StatusSeeOther)
+		return
+	}
 	if cookie.Value != "" {
 		redirectPath = cookie.Value
 	}
@@ -52,24 +58,28 @@ func authentication(id string, pass string) bool {
 func secretHandler(w http.ResponseWriter, r *http.Request) {
 
 	// IF NOT LOGIN
-	// http.SetCookie(w, &http.Cookie{
-	// Name:  "original_url",
-	// Value: r.URL.Path,
-	// })
-	// Redirect to the login page
-	// http.Redirect(w, r, "/login", http.StatusSeeOther)
+	sid, err := r.Cookie("sid")
+	if err != nil {
+		// Set cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:  "original_url",
+			Value: r.URL.Path,
+		})
+		// Redirect to the login page
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
-	// // Check if count exists
-	// if session.Values["count"] != nil {
-	// 	session.Values["count"] = session.Values["count"].(int) + 1
-	// } else {
-	// 	session.Values["count"] = 1
-	// }
+	if sid.Value != "hogehoge" {
+		// Set cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:  "original_url",
+			Value: r.URL.Path,
+		})
+		// Redirect to the login page
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
-	// // Save the session before writing to the response.
-	// session.Save(r, w)
-
-	// // Write response
-	// count := session.Values["count"].(int)
-	// fmt.Fprintf(w, "Count: %d", count)
+	w.Write([]byte("This is a private area, welcome!\n"))
 }
